@@ -335,18 +335,19 @@ export class GameEngine {
         const minimap = document.getElementById('minimap-container');
         if (minimap) minimap.classList.remove('hidden');
 
-        // Snap camera immediately to avoid blue sky flash
+        // Logic sync first to ensure everything is initialized and positioned
+        this.updateLogic(0);
+        this.onWindowResize();
+
+        // Caméra sync : On s'assure que le joueur est bien placé avant de snapper
         if (this.player && this.camera) {
+            this.player.update(0); // Force la synchro mesh/physique
             const playerPos = this.player.mesh.position;
             const cameraOffset = new THREE.Vector3(0, 6, 12);
             this.camera.position.copy(playerPos).add(cameraOffset);
             this.camera.lookAt(playerPos.x, playerPos.y + 2, playerPos.z);
             console.log("Camera snapped to player at:", playerPos);
         }
-
-        // Logic sync
-        this.onWindowResize();
-        this.updateLogic(0);
 
         // Initial environment sync
         if (this.saveManager) {
@@ -460,7 +461,13 @@ export class GameEngine {
         this.sunLight.shadow.camera.bottom = -500;
         this.scene.add(this.sunLight);
 
+        this.renderer.domElement.style.position = 'absolute';
+        this.renderer.domElement.style.top = '0';
+        this.renderer.domElement.style.left = '0';
+        this.renderer.domElement.style.width = '100%';
+        this.renderer.domElement.style.height = '100%';
         this.gameContainer.appendChild(this.renderer.domElement);
+        this.gameContainer.style.overflow = 'hidden';
 
         // Initialize modular advanced graphics
         this.graphicsManager = new GraphicsManager(this.scene, this.camera, this.renderer, this);
@@ -807,9 +814,13 @@ export class GameEngine {
         }
 
         // Apply Colors
-        if (!this.scene.background) this.scene.background = new THREE.Color();
-        this.scene.background.copy(targetColor);
-        if (this.scene.fog) {
+        if (this.scene.background && this.scene.background.copy) {
+            this.scene.background.copy(targetColor);
+        } else {
+            this.scene.background = targetColor.clone();
+        }
+
+        if (this.scene.fog && this.scene.fog.color) {
             this.scene.fog.color.copy(targetColor);
         }
 

@@ -57,7 +57,7 @@ export class Player {
         this.body = new CANNON.Body({
             mass: 70, // Poids du personnage en kg
             fixedRotation: true, // Empêche le personnage de basculer
-            position: new CANNON.Vec3(0, 10, 0),
+            position: new CANNON.Vec3(0, 2, 0),
             linearDamping: 0.9,
             angularDamping: 1.0 // Coupe toute rotation parasite
         });
