@@ -126,7 +126,7 @@ export class GameEngine {
         const criticalAssets = [
             '1asset.glb', '2asset.glb', '3asset.glb', '4asset.glb',
             '5asset.glb', '6asset.glb', '7asset.glb', '8asset.glb',
-            '9asset.glb', '10asset.glb', '11asset.glb', '12asset.glb', '13asset.gltf'
+            '9asset.glb', '10asset.glb', '11asset.glb', '13asset.gltf'
         ];
 
         // The rest loads gently in the background while the user plays
@@ -399,6 +399,7 @@ export class GameEngine {
     initGraphics() {
         // Initialize Three.js Scene
         this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0x020205); // Initialize with default night charcoal color
         // Camera setup
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         this.camera.position.set(0, 5, 20); // Elevated view
@@ -736,7 +737,7 @@ export class GameEngine {
         const dayProgress = timeDecimal / 24;
 
         // Define Sky Colors
-        const nightColor = new THREE.Color(0x000511);
+        const nightColor = new THREE.Color(0x020205); // Almost black, more cinematic than navy blue
         const dawnColor = new THREE.Color(0xff7755);
         const dayColor = new THREE.Color(0x88ccff);
         const duskColor = new THREE.Color(0xaa4422);
@@ -785,6 +786,7 @@ export class GameEngine {
         }
 
         // Apply Colors
+        if (!this.scene.background) this.scene.background = new THREE.Color();
         this.scene.background.copy(targetColor);
         if (this.scene.fog) {
             this.scene.fog.color.copy(targetColor);

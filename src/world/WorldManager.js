@@ -49,7 +49,6 @@ export class WorldManager {
             { name: '8asset.glb', pos: new THREE.Vector3(0, 0, -250), scale: 6 },
             { name: '10asset.glb', pos: new THREE.Vector3(300, 0, 300), scale: 3 },
             { name: '11asset.glb', pos: new THREE.Vector3(-300, 0, 300), scale: 2 },
-            { name: '12asset.glb', pos: new THREE.Vector3(350, 0, -350), scale: 1.5 },
             { name: '13asset.gltf', pos: new THREE.Vector3(-350, 0, -350), scale: 10 },
             { name: '14asset.gltf', pos: new THREE.Vector3(400, 0, 100), scale: 5 },
             { name: '15asset.gltf', pos: new THREE.Vector3(-400, 0, -100), scale: 8 },

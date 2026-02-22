@@ -6,7 +6,7 @@ export class VolumetricFog {
         this.camera = camera;
 
         // Basic Exponential Fog for performance, but customized parameters
-        this.scene.fog = new THREE.FogExp2(0x000511, 0.002);
+        this.scene.fog = new THREE.FogExp2(0x020205, 0.002);
     }
 
     setColor(hexColor) {
