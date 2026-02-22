@@ -4,7 +4,7 @@ export class ShadowManager {
     constructor(renderer) {
         this.renderer = renderer;
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Ultra by default, but scalable
+        this.renderer.shadowMap.type = THREE.PCFShadowMap; // Ultra by default, but scalable
     }
 
     applyQualitySetting(level) {
@@ -13,7 +13,7 @@ export class ShadowManager {
         } else if (level === 'Moyenne') {
             this.renderer.shadowMap.type = THREE.PCFShadowMap;
         } else {
-            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            this.renderer.shadowMap.type = THREE.PCFShadowMap;
         }
     }
 }

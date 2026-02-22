@@ -188,19 +188,27 @@ export class GameEngine {
 
         // Managers
         this.player = new Player(this.scene, this.world, this.camera);
+        this.lodManager = new LODManager(this.scene, this.camera);
+        this.npcManager = new NPCManager(this.scene, this.world, this.player, null, this.assets);
         this.cityGenerator = new CityGenerator(this.scene, this.world, this.assets);
         this.cityGenerator.initGlobalFeatures();
 
-        this.worldManager = new WorldManager(this.scene, this.world, this.player, this.assets);
+        this.worldManager = new WorldManager(this.scene, this.world, this.player, this.assets, this.lodManager);
         this.worldManager.initChunkManager(this.cityGenerator);
         this.worldManager.update(0);
 
-        this.npcManager = new NPCManager(this.scene, this.world, this.player, null, this.assets);
         this.trafficManager = new TrafficManager(this.scene, this.world, this.assets);
         this.graphicsManager = new GraphicsManager(this.scene, this.camera, this.renderer, this);
         this.questManager = new QuestManager(this.scene, this.player);
         this.eventManager = new EventManager(this.scene, this.player, this.questManager);
+        this.audioManager = new AudioManager(this.camera);
+        this.mOSManager = new mOSManager();
+        this.mPhoneManager = new mPhoneManager();
+        this.interactionManager = new InteractionManager(this.scene, this.player);
+        this.waypointManager = new WaypointManager(this);
+        this.interiorManager = new InteriorManager(this.scene, this.world, this.player);
 
+        window.game = this; // Accès global pour l'UI et les managers
         this.initGameLoop();
         this.engineInitialized = true;
 
@@ -224,6 +232,10 @@ export class GameEngine {
         if (this.npcManager) this.npcManager.update(dt);
         if (this.trafficManager) this.trafficManager.update(dt);
         if (this.eventManager) this.eventManager.update(dt);
+        if (this.interactionManager) this.interactionManager.update();
+        if (this.waypointManager) this.waypointManager.update(dt);
+        if (this.lodManager) this.lodManager.update();
+        if (this.interiorManager) this.interiorManager.update();
     }
 
     startGame() {

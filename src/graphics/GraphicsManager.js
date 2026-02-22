@@ -13,7 +13,7 @@ export class GraphicsManager {
     init() {
         // Paramètres de base pour assurer la compatibilité
         this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
         // S'assurer que le fond est bien sombre pour éviter le flash
         this.scene.background = new THREE.Color(0x020205);
