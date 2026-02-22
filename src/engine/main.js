@@ -103,10 +103,19 @@ export class GameEngine {
 
         this.weaponShop = new WeaponShopUI(this);
 
+        // Verrou de démarrage : évite les transitions vers un rendu non initialisé (écran blanc)
+        this.engineInitialized = false;
+        this.assetsReady = false;
+
         this.initUI();
     }
 
     initUI() {
+        if (this.startBtn) {
+            this.startBtn.disabled = true;
+            this.startBtn.classList.add('opacity-50', 'pointer-events-none');
+        }
+
         if (this.startBtn) {
             this.startBtn.addEventListener('click', () => {
                 console.log('Game Started');
@@ -245,8 +254,11 @@ export class GameEngine {
 
         if (this.startBtn) {
             this.startBtn.innerText = "ENTRER DANS NEOCITY";
+            this.startBtn.disabled = false;
             this.startBtn.classList.remove('opacity-50', 'pointer-events-none');
         }
+
+        this.assetsReady = true;
 
         // --- Start Background Loader for Secondary Assets DONT BLOCK ---
         this.startBackgroundLoader();
@@ -295,6 +307,12 @@ export class GameEngine {
 
     async startGame() {
         if (this.gameStarted) return;
+
+        if (!this.engineInitialized || !this.assetsReady || !this.renderer || !this.scene) {
+            console.warn('Démarrage ignoré: moteur pas encore prêt.');
+            alert("Le chargement de NeoCity n'est pas terminé. Patientez quelques secondes.");
+            return;
+        }
 
         // Vérification de sécurité (Mot de passe) v0.0.2
         if (this.saveManager && this.saveManager.state.player.password) {
