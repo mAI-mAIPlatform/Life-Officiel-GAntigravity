@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+/* Initial reset and font */
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    background-color: #0A192F; /* Fallback liquidBlue color */
+}
+
+/* Base UI styling */
+#ui-container {
+    transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
+}
+
+/* Classes to hide the UI cleanly */
+#ui-container.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(1.05); /* Small cinematic zoom out when fading */
+}
+
+/* Add custom animations for extra rich feel */
+@keyframes glowPulse {
+    0% {
+        box-shadow: 0 0 10px rgba(0, 255, 128, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(0, 255, 128, 0.8);
+    }
+    100% {
+        box-shadow: 0 0 10px rgba(0, 255, 128, 0.4);
+    }
+}
+
+#start-btn {
+    animation: glowPulse 3s infinite ease-in-out;
+}
+
+/* 3D Game container */
+#game-container {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}

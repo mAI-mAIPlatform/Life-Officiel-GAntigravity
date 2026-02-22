@@ -1,0 +1,26 @@
+{
+  "name": "Life",
+  "version": "0.0.5",
+  "scripts": {
+    "dev": "vite --port 7777",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.19.3",
+    "@gltf-transform/cli": "^4.3.0",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "@react-three/rapier": "^2.2.0",
+    "@types/three": "^0.183.1",
+    "cannon-es": "^0.20.0",
+    "framer-motion": "^12.34.3",
+    "lucide-react": "^0.575.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "three": "^0.183.1",
+    "three-stdlib": "^2.36.1",
+    "vite": "^7.3.1",
+    "zustand": "^5.0.11"
+  }
+}
