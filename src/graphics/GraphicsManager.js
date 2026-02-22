@@ -1,13 +1,4 @@
 import * as THREE from 'three';
-import { VolumetricFog } from './effects/VolumetricFog.js';
-import { RainSystem } from './effects/RainSystem.js';
-import { DustParticles } from './effects/DustParticles.js';
-import { SkyboxManager } from './environment/SkyboxManager.js';
-import { CloudSystem } from './environment/CloudSystem.js';
-import { WindSystem } from './environment/WindSystem.js';
-import { PBRMaterialLibrary } from './materials/PBRMaterialLibrary.js';
-import { ShadowManager } from './optimization/ShadowManager.js';
-import { FrustumCuller } from './optimization/FrustumCuller.js';
 
 export class GraphicsManager {
     constructor(scene, camera, renderer, engine) {
@@ -16,49 +7,30 @@ export class GraphicsManager {
         this.renderer = renderer;
         this.engine = engine;
 
-        // Optimization
-        this.shadowManager = new ShadowManager(this.renderer);
-        this.frustumCuller = new FrustumCuller(this.scene, this.camera);
-
-        // Materials & Textures
-        this.pbrLibrary = new PBRMaterialLibrary();
-
-        // Environment & Weather
-        this.skyboxManager = new SkyboxManager(this.scene, this.renderer);
-        this.cloudSystem = new CloudSystem(this.scene);
-        this.windSystem = new WindSystem();
-
-        // Effects
-        this.volumetricFog = new VolumetricFog(this.scene, this.camera);
-        this.rainSystem = new RainSystem(this.scene, this.camera);
-        this.dustParticles = new DustParticles(this.scene, this.camera);
-
         this.init();
     }
 
     init() {
-        // Appliquer les paramètres graphiques globaux
-        this.shadowManager.applyQualitySetting('Ultra'); // Mettre à jour avec paramètre utilisateur 
+        // Paramètres de base pour assurer la compatibilité
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // S'assurer que le fond est bien sombre pour éviter le flash
+        this.scene.background = new THREE.Color(0x020205);
     }
 
     update(deltaTime) {
-        const time = performance.now() * 0.001;
-        this.windSystem.update(time);
-
-        // Update weather/effects
-        this.cloudSystem.update(time, this.windSystem.getWindVector());
-        this.dustParticles.update(deltaTime, this.windSystem.getWindVector());
-        this.rainSystem.update(deltaTime, this.windSystem.getWindVector());
-
-        // Update optimization
-        this.frustumCuller.update();
+        // On garde ça simple pour déboguer le démarrage
     }
 
     render() {
+        if (!this.renderer || !this.scene || !this.camera) return;
         this.renderer.render(this.scene, this.camera);
     }
 
     onWindowResize(width, height) {
-        // Handle any post-processing composer resizes here in the future
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
     }
 }
