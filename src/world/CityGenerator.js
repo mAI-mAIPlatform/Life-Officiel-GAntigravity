@@ -45,22 +45,12 @@ export class CityGenerator {
         this.buildings = [];
         this.dummy = new THREE.Object3D();
 
-        // Initialisation des tableaux pour l'InstanceMesh
-        this.instanceData = {
-            sidewalk: [],
-            baseBox: [[], [], [], []],
-            baseCylinder: [[], [], [], []],
-            roof: [[], [], [], []],
-            antenna: [[], [], [], []],
-            neonBox: [[], [], [], []],
-            neonCylinder: [[], [], [], []],
-            bench: [],
-            lamp: [],
-            treeTrunk: [],
-            treeLeaf: [],
-            bush: [],
-            parkingLine: []
-        };
+        // Initialisation par défaut pour les landmarks globaux
+        this.instanceData = this.createEmptyInstanceData();
+
+        // Tracking des matrices par chunk pour éviter les doublons et fuites
+        this.chunkMatrices = new Map(); // key: "startX,startZ", value: instanceData clone
+        this.chunkMatrices.set('global', this.instanceData);
     }
 
     initGlobalFeatures() {
@@ -84,16 +74,20 @@ export class CityGenerator {
     }
 
     generateChunk(startX, startZ, size, hasPhysics) {
+        const chunkKey = `${startX},${startZ}`;
+
+        // Initialiser les données d'instances pour ce chunk uniquement
+        const localInstanceData = this.createEmptyInstanceData();
+        this.instanceData = localInstanceData; // Redirection temporaire pour les méthodes de création
+
         const blockSize = 25;
         const streetWidth = 12;
         let physicsBodies = [];
 
         for (let x = startX; x < startX + size; x += blockSize + streetWidth) {
             for (let z = startZ; z < startZ + size; z += blockSize + streetWidth) {
-                // Zone de spawn (centre) sans bâtiment
                 if (Math.abs(x) < 40 && Math.abs(z) < 40) continue;
 
-                // Unique buildings (simplified generic check for now)
                 if (x > 40 && x < 100 && z > 40 && z < 100) {
                     physicsBodies.push(...this.createCityHall(x, z, blockSize));
                     continue;
@@ -103,7 +97,7 @@ export class CityGenerator {
                     continue;
                 }
                 if (x > 40 && x < 100 && z < -40 && z > -100) {
-                    this.createPark(x, z, blockSize); // Parks don't need massive blockers
+                    this.createPark(x, z, blockSize);
                     continue;
                 }
                 if (Math.random() > 0.85) {
@@ -118,7 +112,7 @@ export class CityGenerator {
             }
         }
 
-        // Add vegetation locally to this chunk
+        // Végétation locale
         for (let i = 0; i < 5; i++) {
             const vx = startX + Math.random() * size;
             const vz = startZ + Math.random() * size;
@@ -126,11 +120,35 @@ export class CityGenerator {
             else this.addBush(vx, vz);
         }
 
-        // Re-build instance meshes entirely to reflect new matrices
+        // Sauvegarder les matrices de ce chunk
+        this.chunkMatrices.set(chunkKey, localInstanceData);
+
+        // Restaurer le pointeur vers les données globales pour les landmarks hors-chunk
+        this.instanceData = this.chunkMatrices.get('global');
+
         this.refreshInstanceMeshes(false);
 
         return {
+            chunkKey: chunkKey,
             physicsBodies: physicsBodies
+        };
+    }
+
+    createEmptyInstanceData() {
+        return {
+            sidewalk: [],
+            baseBox: [[], [], [], []],
+            baseCylinder: [[], [], [], []],
+            roof: [[], [], [], []],
+            antenna: [[], [], [], []],
+            neonBox: [[], [], [], []],
+            neonCylinder: [[], [], [], []],
+            bench: [],
+            lamp: [],
+            treeTrunk: [],
+            treeLeaf: [],
+            bush: [],
+            parkingLine: []
         };
     }
 
@@ -138,30 +156,64 @@ export class CityGenerator {
         if (this.refreshTimeout) clearTimeout(this.refreshTimeout);
 
         const rebuild = () => {
-            // Clear old ones - iterate backwards to safely remove
-            for (let i = this.scene.children.length - 1; i >= 0; i--) {
-                const child = this.scene.children[i];
-                if (child.isInstancedMesh && child.userData.isProceduralCity) {
-                    this.scene.remove(child);
-                }
-            }
+            try {
+                // On prépare une structure globale vide pour fusionner tous les chunks actifs
+                const globalData = this.createEmptyInstanceData();
 
-            // Rebuild them from current arrays
-            this.buildInstancedMeshes();
-            this.refreshTimeout = null;
+                // Fusionner les matrices de tous les chunks actifs
+                for (const chunkData of this.chunkMatrices.values()) {
+                    this.mergeInstanceData(globalData, chunkData);
+                }
+
+                // Suppression propre des anciens messages et libération mémoire
+                for (let i = this.scene.children.length - 1; i >= 0; i--) {
+                    const child = this.scene.children[i];
+                    if (child.isInstancedMesh && child.userData.isProceduralCity) {
+                        if (child.geometry && !child.userData.sharedGeo) {
+                            // On ne dispose pas les géométries partagées (boxGeo, etc.)
+                        }
+                        this.scene.remove(child);
+                    }
+                }
+
+                // Reconstruire
+                this.buildInstancedMeshesFrom(globalData);
+                this.refreshTimeout = null;
+            } catch (e) {
+                console.error("Critical Rebuild Failure:", e);
+            }
         };
 
-        if (immediate) {
-            rebuild();
-        } else {
-            this.refreshTimeout = setTimeout(rebuild, 32); // Wait 2 frames approximately before rebuilding
+        if (immediate) rebuild();
+        else this.refreshTimeout = setTimeout(rebuild, 50);
+    }
+
+    mergeInstanceData(target, source) {
+        target.sidewalk.push(...source.sidewalk);
+        target.bench.push(...source.bench);
+        target.lamp.push(...source.lamp);
+        target.treeTrunk.push(...source.treeTrunk);
+        target.treeLeaf.push(...source.treeLeaf);
+        target.bush.push(...source.bush);
+        target.parkingLine.push(...source.parkingLine);
+
+        for (let i = 0; i < 4; i++) {
+            target.baseBox[i].push(...source.baseBox[i]);
+            target.baseCylinder[i].push(...source.baseCylinder[i]);
+            target.roof[i].push(...source.roof[i]);
+            target.antenna[i].push(...source.antenna[i]);
+            target.neonBox[i].push(...source.neonBox[i]);
+            target.neonCylinder[i].push(...source.neonCylinder[i]);
         }
     }
 
     unloadChunkGraphics(chunk) {
-        // Advanced: removing matrices from array is complex and slow.
-        // For now, since we rebuild InstancedMeshes locally, we don't do complex matrix removal here,
-        // we just rely on physics unloading for memory/CPU saving. Memory for matrices is negligible.
+        if (chunk && chunk.chunkKey) {
+            if (this.chunkMatrices.has(chunk.chunkKey)) {
+                this.chunkMatrices.delete(chunk.chunkKey);
+                this.refreshInstanceMeshes(false);
+            }
+        }
     }
 
     placeLandmarks() {
@@ -217,33 +269,32 @@ export class CityGenerator {
             { name: '50asset.obj', pos: new THREE.Vector3(100, 0, -650), scale: 3 }
         ];
 
-        this.unplacedLandmarks = landmarks;
+        this.unplacedLandmarks = [...landmarks]; // Clone the array
 
         // Process landmarks in batches of 5 every frame to prevent blocking
-        let index = 0;
         const batchSize = 5;
 
         const loadBatch = () => {
             let processedThisBatch = 0;
-
-            while (index < this.unplacedLandmarks.length && processedThisBatch < batchSize) {
-                const config = this.unplacedLandmarks[index];
+            let i = 0;
+            while (i < this.unplacedLandmarks.length && processedThisBatch < batchSize) {
+                const config = this.unplacedLandmarks[i];
                 const model = this.assets[config.name];
 
                 if (model) {
                     // It's loaded, place it
                     this.placeSingleLandmark(config, model);
                     // Remove from unplaced list
-                    this.unplacedLandmarks.splice(index, 1);
+                    this.unplacedLandmarks.splice(i, 1);
                     processedThisBatch++;
                 } else {
-                    // Not loaded yet (probably a secondary asset), skip for now
-                    index++;
+                    // Not loaded yet, skip for now and check next
+                    i++;
                 }
             }
 
             // If we still have unchecked items, queue next batch
-            if (index < this.unplacedLandmarks.length) {
+            if (this.unplacedLandmarks.length > 0) {
                 setTimeout(loadBatch, 30); // Next batch on next tick (30ms to breathe)
             } else {
                 this.addThematicGrounds();
@@ -288,18 +339,22 @@ export class CityGenerator {
 
     onBackgroundAssetLoaded(assetName) {
         // Called by main.js when a secondary asset finishes loading
-        if (!this.unplacedLandmarks) return;
+        if (!this.unplacedLandmarks || this.unplacedLandmarks.length === 0) return;
+
+        const model = this.assets[assetName];
+        if (!model) return; // Asset not actually loaded or not found
 
         // Find all configurations waiting for this asset
         for (let i = this.unplacedLandmarks.length - 1; i >= 0; i--) {
             const config = this.unplacedLandmarks[i];
             if (config.name === assetName) {
-                const model = this.assets[assetName];
-                if (model) {
-                    this.placeSingleLandmark(config, model);
-                    this.unplacedLandmarks.splice(i, 1);
-                }
+                this.placeSingleLandmark(config, model);
+                this.unplacedLandmarks.splice(i, 1);
             }
+        }
+        // If all landmarks are placed, call addThematicGrounds
+        if (this.unplacedLandmarks.length === 0) {
+            this.addThematicGrounds();
         }
     }
 
@@ -340,9 +395,13 @@ export class CityGenerator {
     }
 
     addInstanceContent(array, position, scale) {
+        // Sécurité contre les valeurs infinies ou NaN qui font crasher WebGL
+        if (!isFinite(position.x) || !isFinite(position.y) || !isFinite(position.z)) return;
+
         this.dummy.position.copy(position);
         this.dummy.scale.copy(scale);
         this.dummy.updateMatrix();
+
         array.push(this.dummy.matrix.clone());
     }
 
@@ -612,39 +671,42 @@ export class CityGenerator {
         return body;
     }
 
-    buildInstancedMeshes() {
+    buildInstancedMeshesFrom(data) {
         const createIMesh = (matricesArray, geometry, material, castShadow = true, receiveShadow = true) => {
-            if (matricesArray.length === 0) return;
+            if (!matricesArray || matricesArray.length === 0) return;
+
             const imesh = new THREE.InstancedMesh(geometry, material, matricesArray.length);
             imesh.userData.isProceduralCity = true;
+
             for (let i = 0; i < matricesArray.length; i++) {
                 imesh.setMatrixAt(i, matricesArray[i]);
             }
+
             imesh.castShadow = castShadow;
             imesh.receiveShadow = receiveShadow;
+            imesh.frustumCulled = true; // IMPORTANT pour les perfs
 
-            // InstancedMesh cast shadows but might be very heavy if too large, we enable them for quality
             this.scene.add(imesh);
         };
 
-        createIMesh(this.instanceData.sidewalk, this.boxGeo, this.materials.sidewalk, true, true);
-        createIMesh(this.instanceData.bench, this.benchGeo, this.materials.prop, true, true);
-        createIMesh(this.instanceData.lamp, this.lampGeo, this.materials.prop, true, true);
-        createIMesh(this.instanceData.treeTrunk, this.treeTrunkGeo, this.materials.bark, true, true);
-        createIMesh(this.instanceData.treeLeaf, this.treeLeafGeo, this.materials.leaf, true, true);
-        createIMesh(this.instanceData.bush, this.bushGeo, this.materials.bush, true, true);
-        createIMesh(this.instanceData.parkingLine, this.parkingLineGeo, this.materials.parkingLine, false, true);
+        createIMesh(data.sidewalk, this.boxGeo, this.materials.sidewalk, true, true);
+        createIMesh(data.bench, this.benchGeo, this.materials.prop, true, true);
+        createIMesh(data.lamp, this.lampGeo, this.materials.prop, true, true);
+        createIMesh(data.treeTrunk, this.treeTrunkGeo, this.materials.bark, true, true);
+        createIMesh(data.treeLeaf, this.treeLeafGeo, this.materials.leaf, true, true);
+        createIMesh(data.bush, this.bushGeo, this.materials.bush, true, true);
+        createIMesh(data.parkingLine, this.parkingLineGeo, this.materials.parkingLine, false, true);
 
-        for (let i = 0; i < this.materials.base.length; i++) {
-            createIMesh(this.instanceData.baseBox[i], this.boxGeo, this.materials.base[i], true, true);
-            createIMesh(this.instanceData.baseCylinder[i], this.cylinderGeo, this.materials.base[i], true, true);
-            createIMesh(this.instanceData.roof[i], this.boxGeo, this.materials.base[i], true, true);
-            createIMesh(this.instanceData.antenna[i], this.antennaGeo, this.materials.base[i], true, true);
+        for (let i = 0; i < 4; i++) {
+            createIMesh(data.baseBox[i], this.boxGeo, this.materials.base[i], true, true);
+            createIMesh(data.baseCylinder[i], this.cylinderGeo, this.materials.base[i], true, true);
+            createIMesh(data.roof[i], this.boxGeo, this.materials.base[i], true, true);
+            createIMesh(data.antenna[i], this.antennaGeo, this.materials.base[i], true, true);
         }
 
-        for (let i = 0; i < this.materials.neon.length; i++) {
-            createIMesh(this.instanceData.neonBox[i], this.boxGeo, this.materials.neon[i], false, false);
-            createIMesh(this.instanceData.neonCylinder[i], this.cylinderGeo, this.materials.neon[i], false, false);
+        for (let i = 0; i < 4; i++) {
+            createIMesh(data.neonBox[i], this.boxGeo, this.materials.neon[i], false, false);
+            createIMesh(data.neonCylinder[i], this.cylinderGeo, this.materials.neon[i], false, false);
         }
     }
 }

@@ -39,6 +39,8 @@ import { InteractionManager } from './InteractionManager.js';
 import { SaveManager } from './SaveManager.js';
 
 const reporter = new ErrorReporter();
+// Attach reporter to window for global access in GameLoop
+window.errorReporter = reporter;
 
 export class GameEngine {
     constructor() {
@@ -209,8 +211,13 @@ export class GameEngine {
         this.interiorManager = new InteriorManager(this.scene, this.world, this.player);
 
         window.game = this; // Accès global pour l'UI et les managers
+        this.reporter = reporter;
+
         this.initGameLoop();
         this.engineInitialized = true;
+
+        // S'assurer que les écrans de chargement sont à jour
+        if (this.saveManager) this.saveManager.updateUI();
 
         if (this.startBtn) {
             this.startBtn.innerText = "ENTRER DANS NEOCITY";
@@ -260,8 +267,13 @@ export class GameEngine {
         cube.position.set(0, 1, 0);
         this.scene.add(cube);
 
-        this.gameLoop.start();
-        console.log("Game Active.");
+        try {
+            this.gameLoop.start();
+            console.log("Game Active.");
+        } catch (err) {
+            console.error("Start Game Failed:", err);
+            reporter.showError("Échec du démarrage", err.message);
+        }
     }
 
     onWindowResize() {

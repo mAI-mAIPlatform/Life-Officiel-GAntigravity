@@ -61,15 +61,30 @@ export class InteractionManager {
         let found = null;
         const playerPos = this.player.mesh.position;
 
-        // On cherche l'objet interactif le plus proche
-        this.scene.traverse((child) => {
-            if (child.userData && child.userData.isSittable) {
-                const dist = playerPos.distanceTo(child.position);
-                if (dist < 4) {
-                    found = child;
+        // Optimization: Ne pas traverser toute la scène.
+        // On cherche seulement dans les objets désignés comme interactifs.
+        for (let obj of this.interactables) {
+            if (!obj || !obj.position) continue;
+            const dist = playerPos.distanceTo(obj.position);
+            if (dist < 4) {
+                found = obj;
+                break;
+            }
+        }
+
+        // Si pas trouvé dans la liste explicite, on peut faire un check sporadique 
+        // ou désigner les modèles lors de leur chargement.
+        if (!found) {
+            // Check worldManager landmarks or npcs
+            if (window.game && window.game.npcManager) {
+                for (let npc of window.game.npcManager.npcs) {
+                    if (playerPos.distanceTo(npc.mesh.position) < 5) {
+                        found = npc.mesh;
+                        break;
+                    }
                 }
             }
-        });
+        }
 
         if (found !== this.currentInteractable) {
             this.currentInteractable = found;

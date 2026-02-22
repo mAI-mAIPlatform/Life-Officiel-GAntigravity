@@ -19,26 +19,30 @@ export class ErrorReporter {
     listenToErrors() {
         // Intercepter window.onerror
         window.onerror = (message, source, lineno, colno, error) => {
-            this.showError(`Code Error: ${message}`, `${source}:${lineno}`);
+            this.showError(`Crash: ${message}`, `Fichier: ${source?.split('/').pop()}:${lineno}`);
             return false;
         };
 
         window.onunhandledrejection = (event) => {
-            this.showError(`Promise Fail: ${event.reason}`, 'Async operation failed');
+            const reason = event.reason?.message || event.reason;
+            this.showError(`Erreur Async`, reason);
         };
 
         // Intercepter console.error
         const originalError = console.error;
         console.error = (...args) => {
-            this.showError("Console Error", args.join(' '));
+            const msg = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
+            if (msg.includes('THREE') || msg.includes('CANNON') || msg.includes('Error')) {
+                this.showError("Console Error", msg);
+            }
             originalError.apply(console, args);
         };
 
-        // Intercepter console.warn
+        // Intercepter console.warn (seulement les trucs Three.js/Prop important)
         const originalWarn = console.warn;
         console.warn = (...args) => {
             const msg = args.join(' ');
-            if (msg.includes('THREE') || msg.includes('CANNON') || msg.includes('Asset')) {
+            if (msg.includes('THREE') && (msg.includes('material') || msg.includes('light'))) {
                 this.showError("Engine Warning", msg);
             }
             originalWarn.apply(console, args);

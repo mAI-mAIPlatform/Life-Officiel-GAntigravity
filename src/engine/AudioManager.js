@@ -30,7 +30,11 @@ export class AudioManager {
                 this.sounds[trackConfig.name] = sound;
 
                 if (trackConfig.loop) {
-                    sound.play(); // Démarrer les sons de fond automatiquement
+                    try {
+                        sound.play(); // Démarrer les sons de fond automatiquement
+                    } catch (e) {
+                        console.warn("Audio autoplay blocked or failed:", e);
+                    }
                 }
             }, undefined, (err) => {
                 // Ignore l'erreur si fichier absent (pour éviter de bloquer visuellement le jeu pour le USER)

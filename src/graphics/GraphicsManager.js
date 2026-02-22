@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { ShadowManager } from './optimization/ShadowManager.js';
 
 export class GraphicsManager {
     constructor(scene, camera, renderer, engine) {
@@ -7,6 +8,7 @@ export class GraphicsManager {
         this.renderer = renderer;
         this.engine = engine;
 
+        this.shadowManager = new ShadowManager(this.renderer);
         this.init();
     }
 

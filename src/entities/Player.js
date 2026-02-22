@@ -156,12 +156,18 @@ export class Player {
         }
 
         // Caméra à la troisième personne (Third-Person Camera)
-        const cameraOffset = new THREE.Vector3(0, 6, 12); // Position relative au joueur
-        // On fait pivoter l'offset avec la rotation du joueur ou fixement?
-        // Pour un TPS basique (sans contrôle souris), on garde l'offset mondial
-        const desiredCamPos = this.mesh.position.clone().add(cameraOffset);
+        const cameraOffset = new THREE.Vector3(0, 6, 12);
 
-        this.camera.position.lerp(desiredCamPos, 0.1); // Interpolation douce (Lerp)
-        this.camera.lookAt(this.mesh.position.clone().add(new THREE.Vector3(0, 2, 0))); // Regarde la tête du joueur
+        // Sécurité contre l'explosion de la physique
+        if (!isFinite(this.mesh.position.x) || !isFinite(this.mesh.position.y) || !isFinite(this.mesh.position.z)) {
+            console.error("Critical: Player position is NaN or Infinite. Resetting...");
+            this.body.position.set(0, 5, 0);
+            this.body.velocity.set(0, 0, 0);
+            return;
+        }
+
+        const desiredCamPos = this.mesh.position.clone().add(cameraOffset);
+        this.camera.position.lerp(desiredCamPos, 0.1);
+        this.camera.lookAt(this.mesh.position.clone().add(new THREE.Vector3(0, 2, 0)));
     }
 }
