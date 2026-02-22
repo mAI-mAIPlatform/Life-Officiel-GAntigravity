@@ -70,8 +70,9 @@ export class GameEngine {
             this.gameContainer.style.left = '0';
             this.gameContainer.style.width = '100vw';
             this.gameContainer.style.height = '100vh';
-            this.gameContainer.style.zIndex = '0';
-            document.body.appendChild(this.gameContainer);
+            this.gameContainer.style.zIndex = '-1'; // Force behind everything
+            this.gameContainer.style.background = '#050508'; // Dark fallback
+            document.body.prepend(this.gameContainer); // Place at the very beginning of body
         }
 
         // Store Elements
@@ -239,6 +240,10 @@ export class GameEngine {
                 // Force process at least the center chunk synchronously
                 if (this.worldManager.chunkManager) {
                     this.worldManager.chunkManager.processQueue();
+                    // Force rendering immediately as this is the spawn chunk
+                    if (this.cityGenerator) {
+                        this.cityGenerator.refreshInstanceMeshes(true);
+                    }
                 }
             }
         }
@@ -247,6 +252,15 @@ export class GameEngine {
             this.startBtn.innerText = "ENTRER DANS NEOCITY";
             this.startBtn.classList.remove('opacity-50', 'pointer-events-none');
         }
+
+        // --- Sécurité de repli (après 10s force l'activation du bouton si bloqué) ---
+        setTimeout(() => {
+            if (this.startBtn && this.startBtn.classList.contains('pointer-events-none')) {
+                console.warn("Safety trigger: Unlocking start button after timeout.");
+                this.startBtn.innerText = "ENTRER (MODE SECURITE)";
+                this.startBtn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }, 10000);
 
         // --- Start Background Loader for Secondary Assets DONT BLOCK ---
         this.startBackgroundLoader();
@@ -414,7 +428,8 @@ export class GameEngine {
     initGraphics() {
         // Initialize Three.js Scene
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x020205); // Initialize with default night charcoal color
+        this.scene.background = new THREE.Color(0x020205); // Charcoal sombre par défaut
+        this.scene.fog = new THREE.FogExp2(0x020205, 0.002);
         // Camera setup
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
         this.camera.position.set(0, 5, 20); // Elevated view
@@ -449,7 +464,7 @@ export class GameEngine {
 
         // Initialize modular advanced graphics
         this.graphicsManager = new GraphicsManager(this.scene, this.camera, this.renderer, this);
-
+        this.audioManager = new AudioManager(this.camera);
         // LOD Manager initialization
         this.lodManager = new LODManager(this.scene, this.camera);
 

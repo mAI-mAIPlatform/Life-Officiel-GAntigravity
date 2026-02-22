@@ -8,8 +8,8 @@ export class SkyboxManager {
     }
 
     init() {
-        // Un skybox simple génératif sans charger de HDRI lourde pour le web
-        this.scene.background = new THREE.Color(0x88ccff);
+        // Initialiser avec une couleur sombre (charcoal) pour éviter le flash bleu au démarrage
+        this.scene.background = new THREE.Color(0x020205);
     }
 
     setColors(colorHex) {

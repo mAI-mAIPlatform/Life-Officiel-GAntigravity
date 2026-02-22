@@ -127,17 +127,17 @@ export class CityGenerator {
         }
 
         // Re-build instance meshes entirely to reflect new matrices
-        this.refreshInstanceMeshes();
+        this.refreshInstanceMeshes(false);
 
         return {
             physicsBodies: physicsBodies
         };
     }
 
-    refreshInstanceMeshes() {
+    refreshInstanceMeshes(immediate = false) {
         if (this.refreshTimeout) clearTimeout(this.refreshTimeout);
 
-        this.refreshTimeout = setTimeout(() => {
+        const rebuild = () => {
             // Clear old ones - iterate backwards to safely remove
             for (let i = this.scene.children.length - 1; i >= 0; i--) {
                 const child = this.scene.children[i];
@@ -149,7 +149,13 @@ export class CityGenerator {
             // Rebuild them from current arrays
             this.buildInstancedMeshes();
             this.refreshTimeout = null;
-        }, 32); // Wait 2 frames approximately before rebuilding
+        };
+
+        if (immediate) {
+            rebuild();
+        } else {
+            this.refreshTimeout = setTimeout(rebuild, 32); // Wait 2 frames approximately before rebuilding
+        }
     }
 
     unloadChunkGraphics(chunk) {
@@ -250,6 +256,11 @@ export class CityGenerator {
     placeSingleLandmark(config, model) {
         const landmark = model.clone();
         landmark.userData = { name: config.name, isSittable: config.isSittable, zone: config.zone };
+
+        // Appliquer position et scale
+        landmark.position.copy(config.pos);
+        if (config.scale) landmark.scale.setScalar(config.scale);
+
         this.scene.add(landmark);
 
         landmark.traverse(child => {
@@ -259,14 +270,17 @@ export class CityGenerator {
             }
         });
 
+        // Calculer la bounding box après scaling
         const box = new THREE.Box3().setFromObject(landmark);
         const size = new THREE.Vector3();
         box.getSize(size);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
 
         const shape = new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2));
         const body = new CANNON.Body({
             mass: 0,
-            position: new CANNON.Vec3(config.pos.x, size.y / 2, config.pos.z)
+            position: new CANNON.Vec3(center.x, center.y, center.z)
         });
         body.addShape(shape);
         this.world.addBody(body);
