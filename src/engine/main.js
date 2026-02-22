@@ -62,6 +62,17 @@ export class GameEngine {
         this.uiContainer = document.getElementById('ui-container');
         this.startBtn = document.getElementById('start-btn');
         this.gameContainer = document.getElementById('game-container');
+        if (!this.gameContainer) {
+            this.gameContainer = document.createElement('div');
+            this.gameContainer.id = 'game-container';
+            this.gameContainer.style.position = 'absolute';
+            this.gameContainer.style.top = '0';
+            this.gameContainer.style.left = '0';
+            this.gameContainer.style.width = '100vw';
+            this.gameContainer.style.height = '100vh';
+            this.gameContainer.style.zIndex = '0';
+            document.body.appendChild(this.gameContainer);
+        }
 
         // Store Elements
         this.storeBtn = document.getElementById('open-store-btn');
@@ -124,13 +135,13 @@ export class GameEngine {
     async loadAssets() {
         // Only load the absolute minimum needed to spawn the player and base environment
         const criticalAssets = [
-            '1asset.glb', '2asset.glb', '3asset.glb', '4asset.glb',
-            '5asset.glb', '6asset.glb', '7asset.glb', '8asset.glb',
-            '9asset.glb', '10asset.glb', '11asset.glb', '13asset.gltf'
+            '1asset.glb', '2asset.glb', '3asset.glb', '4asset.glb'
         ];
 
         // The rest loads gently in the background while the user plays
         this.secondaryAssets = [
+            '5asset.glb', '6asset.glb', '7asset.glb', '8asset.glb',
+            '9asset.glb', '10asset.glb', '11asset.glb', '13asset.gltf',
             '14asset.gltf', '15asset.gltf', '16asset.gltf', '17asset.glb',
             '18asset.glb', '19asset.glb', '20asset.glb', '21asset.glb',
             '22asset.glb', '23asset.glb', '24asset.glb', '25asset.glb',
@@ -173,7 +184,7 @@ export class GameEngine {
                 const name = list[index++];
 
                 return new Promise((resolve) => {
-                    const fullPath = `/models/${name}`;
+                    const fullPath = `./models/${name}`; // Important: Relative path
                     const onLoaded = (model) => {
                         this.assets[name] = model;
                         console.log(`Loaded: ${name}`);
@@ -247,7 +258,7 @@ export class GameEngine {
         // Load one by one very slowly to absolutely crush any lag spike issue
         for (const name of this.secondaryAssets) {
             try {
-                const fullPath = `/models/${name}`;
+                const fullPath = `./models/${name}`; // Important: Relative path for Vite/Pages config
                 await new Promise((resolve) => {
                     const onHit = (model) => {
                         this.assets[name] = model;
@@ -259,20 +270,24 @@ export class GameEngine {
                         }
                         resolve();
                     };
+                    const onError = () => {
+                        console.warn("Bg Load skip", name);
+                        resolve();
+                    };
 
                     if (name.endsWith('.fbx')) {
-                        this.fbxLoader.load(fullPath, onHit, undefined, () => resolve());
+                        this.fbxLoader.load(fullPath, onHit, undefined, onError);
                     } else if (name.endsWith('.obj')) {
-                        this.objLoader.load(fullPath, onHit, undefined, () => resolve());
+                        this.objLoader.load(fullPath, onHit, undefined, onError);
                     } else {
-                        this.loader.load(fullPath, (g) => onHit(g.scene), undefined, () => resolve());
+                        this.loader.load(fullPath, (g) => onHit(g.scene), undefined, onError);
                     }
                 });
 
-                // Breath 100ms between each asset to let CPU breathe
-                await new Promise(r => setTimeout(r, 100));
+                // Breath 250ms between each asset to let CPU breathe extensively
+                await new Promise(r => setTimeout(r, 250));
             } catch (e) {
-                console.warn("Bg Load skip", name);
+                console.warn("Bg Load error", name, e);
             }
         }
         console.log("Background Assets Finished.");
@@ -672,22 +687,13 @@ export class GameEngine {
         // Update time internally
         let t = this.saveManager.state.gameTime;
 
-        // Cycle jour/nuit ralenti : 1h in-game = 10 min réelles (si timeSpeed = 6)
-        // deltaTime est en secondes réelles.
-        const inGameSeconds = deltaTime * this.timeSpeed;
-        t.minutes += inGameSeconds / 60;
+        // Cycle jour/nuit désactivé TEMPORAIREMENT comme demandé. Toujours bloqué à midi (12h).
+        t.hours = 12;
+        t.minutes = 0;
 
-        if (t.minutes >= 60) {
-            const extraHours = Math.floor(t.minutes / 60);
-            t.minutes %= 60;
-            t.hours += extraHours;
-
-            if (t.hours >= 24) {
-                t.hours %= 24;
-                t.day++;
-                this.saveManager.saveGame(); // Sauvegarde quotidienne
-            }
-        }
+        // --- Temps interne (si besoin pour d'autres systèmes, sans avancer l'horloge) ---
+        // const inGameSeconds = deltaTime * this.timeSpeed;
+        const inGameSeconds = deltaTime; // Pour la faim, base 1x
 
         // --- Système de Faim ---
         // Baisse de faim : 5% par heure in-game.
@@ -732,9 +738,9 @@ export class GameEngine {
     }
 
     updateEnvironmentColor(hours, minutes) {
-        // Calculate a 0 to 1 value for the day (0 = midnight, 0.5 = noon, 1 = midnight)
-        const timeDecimal = hours + (minutes / 60);
-        const dayProgress = timeDecimal / 24;
+        // Force day time to noon (12:00) globally
+        const timeDecimal = 12;
+        const dayProgress = 0.5; // Midi
 
         // Define Sky Colors
         const nightColor = new THREE.Color(0x020205); // Almost black, more cinematic than navy blue

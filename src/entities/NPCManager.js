@@ -366,7 +366,9 @@ export class NPCManager {
             const distance = this.player.mesh.position.distanceTo(npc.mesh.position);
             if (distance < 5) foundClose = npc;
             if (distance < 15 && distance > 5 && Math.random() < 0.001 && !this.isConversing) {
-                this.showDialogText(npc.name, getRandomDialogue(), 3000);
+                const barks = ["Belle journée n'est-ce pas ?", "J'adore NeoCity.", "Hmm...", "Fais attention où tu marches !"];
+                const bark = barks[Math.floor(Math.random() * barks.length)];
+                this.showDialogText(npc.name, bark, 2000);
             }
             if (npc.isMobile) { this.updateNPCDecision(npc, deltaTime); this.moveNPC(npc, deltaTime); }
             else { npc.mesh.position.copy(npc.body.position); }
