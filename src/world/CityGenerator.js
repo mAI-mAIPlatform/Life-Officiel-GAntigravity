@@ -61,7 +61,8 @@ export class CityGenerator {
         this.createCityGround(citySizeX, citySizeZ);
 
         // Global Landmarks and thematic grounds are unchanged
-        this.placeLandmarks();
+        // Les landmarks utilisant des modèles ont été supprimés
+        this.addThematicGrounds();
 
         // Custom zones that span multiple chunks or are unique
         this.createParkingZone(-200, 200, 100);
@@ -86,7 +87,7 @@ export class CityGenerator {
 
         for (let x = startX; x < startX + size; x += blockSize + streetWidth) {
             for (let z = startZ; z < startZ + size; z += blockSize + streetWidth) {
-                if (Math.abs(x) < 40 && Math.abs(z) < 40) continue;
+                if (Math.abs(x) < 100 && Math.abs(z) < 100) continue;
 
                 if (x > 40 && x < 100 && z > 40 && z < 100) {
                     physicsBodies.push(...this.createCityHall(x, z, blockSize));
@@ -216,147 +217,12 @@ export class CityGenerator {
         }
     }
 
-    placeLandmarks() {
-        const landmarks = [
-            { name: '1asset.glb', pos: new THREE.Vector3(50, 0, 50), scale: 2 },
-            { name: '2asset.glb', pos: new THREE.Vector3(-60, 0, 80), scale: 3 },
-            { name: '3asset.glb', pos: new THREE.Vector3(120, 0, -100), scale: 1.5 },
-            { name: '4asset.glb', pos: new THREE.Vector3(-150, 0, -150), scale: 4 },
-            { name: '5asset.glb', pos: new THREE.Vector3(200, 0, 0), scale: 2.5 },
-            { name: '6asset.glb', pos: new THREE.Vector3(-200, 0, 0), scale: 3 },
-            { name: '7asset.glb', pos: new THREE.Vector3(0, 0, 250), scale: 5 },
-            { name: '8asset.glb', pos: new THREE.Vector3(0, 0, -250), scale: 6 },
-            { name: '9asset.glb', pos: new THREE.Vector3(80, 0, 80), scale: 2.2 },
-            { name: '10asset.glb', pos: new THREE.Vector3(300, 0, 300), scale: 3 },
-            { name: '11asset.glb', pos: new THREE.Vector3(-300, 0, 300), scale: 2 },
-            { name: '13asset.gltf', pos: new THREE.Vector3(-350, 0, -350), scale: 10 },
-            { name: '14asset.gltf', pos: new THREE.Vector3(400, 0, 100), scale: 5 },
-            { name: '15asset.gltf', pos: new THREE.Vector3(-400, 0, -100), scale: 8 },
-            { name: '16asset.gltf', pos: new THREE.Vector3(100, 0, 400), scale: 6 },
-            { name: '17asset.glb', pos: new THREE.Vector3(-100, 0, -400), scale: 4 },
-            { name: '18asset.glb', pos: new THREE.Vector3(450, 0, 450), scale: 3 },
-            { name: '19asset.glb', pos: new THREE.Vector3(-450, 0, -450), scale: 2 },
-            { name: '20asset.glb', pos: new THREE.Vector3(300, 0, -300), scale: 1.5, zone: 'beach', isSittable: true },
-            { name: '21asset.glb', pos: new THREE.Vector3(320, 0, -350), scale: 2.5, zone: 'beach', isSittable: true },
-            { name: '22asset.glb', pos: new THREE.Vector3(280, 0, -380), scale: 1.2, zone: 'beach', isSittable: true },
-            { name: '23asset.glb', pos: new THREE.Vector3(350, 0, -320), scale: 3, zone: 'beach', isSittable: true },
-            { name: '24asset.glb', pos: new THREE.Vector3(400, 0, -400), scale: 5, zone: 'beach', isSittable: true },
-            { name: '25asset.glb', pos: new THREE.Vector3(-300, 0, -300), scale: 1, zone: 'scrap' },
-            { name: '26asset.glb', pos: new THREE.Vector3(-320, 0, -350), scale: 1.5, zone: 'scrap' },
-            { name: '27asset.glb', pos: new THREE.Vector3(-280, 0, -380), scale: 2, zone: 'scrap' },
-            { name: '28asset.glb', pos: new THREE.Vector3(-350, 0, -320), scale: 1.8, zone: 'scrap' },
-            { name: '29asset.glb', pos: new THREE.Vector3(-400, 0, -400), scale: 2.2, zone: 'scrap' },
-            { name: '30asset.glb', pos: new THREE.Vector3(-450, 0, -350), scale: 6, zone: 'scrap' },
-            { name: '31asset.fbx', pos: new THREE.Vector3(250, 0, -150), scale: 1, isSittable: false },
-            { name: '32asset.glb', pos: new THREE.Vector3(-250, 0, 150), scale: 3, isSittable: false },
-            { name: '33asset.glb', pos: new THREE.Vector3(150, 0, 250), scale: 2, isSittable: false },
-            { name: '34asset.obj', pos: new THREE.Vector3(100, 0, -200), scale: 4, isSittable: false },
-            { name: '35asset.fbx', pos: new THREE.Vector3(500, 0, 0), scale: 1 },
-            { name: '36asset.fbx', pos: new THREE.Vector3(-500, 0, 0), scale: 1.5 },
-            { name: '37asset.fbx', pos: new THREE.Vector3(0, 0, 500), scale: 2 },
-            { name: '38asset.fbx', pos: new THREE.Vector3(0, 0, -500), scale: 2.5 },
-            { name: '39asset.fbx', pos: new THREE.Vector3(550, 0, 550), scale: 3 },
-            { name: '40asset.fbx', pos: new THREE.Vector3(-550, 0, 550), scale: 1 },
-            { name: '41asset.fbx', pos: new THREE.Vector3(550, 0, -550), scale: 1.2 },
-            { name: '42asset.fbx', pos: new THREE.Vector3(-550, 0, -550), scale: 1.8 },
-            { name: '43asset.fbx', pos: new THREE.Vector3(600, 0, 200), scale: 2.2 },
-            { name: '44asset.fbx', pos: new THREE.Vector3(-600, 0, 200), scale: 0.8 },
-            { name: '45asset.fbx', pos: new THREE.Vector3(200, 0, 600), scale: 1.5 },
-            { name: '46asset.fbx', pos: new THREE.Vector3(200, 0, -600), scale: 2 },
-            { name: '47asset.fbx', pos: new THREE.Vector3(650, 0, 100), scale: 1.4 },
-            { name: '48asset.fbx', pos: new THREE.Vector3(-650, 0, 100), scale: 2.6 },
-            { name: '49asset.fbx', pos: new THREE.Vector3(100, 0, 650), scale: 1.9 },
-            { name: '50asset.obj', pos: new THREE.Vector3(100, 0, -650), scale: 3 }
-        ];
-
-        this.unplacedLandmarks = [...landmarks]; // Clone the array
-
-        // Process landmarks in batches of 5 every frame to prevent blocking
-        const batchSize = 5;
-
-        const loadBatch = () => {
-            let processedThisBatch = 0;
-            let i = 0;
-            while (i < this.unplacedLandmarks.length && processedThisBatch < batchSize) {
-                const config = this.unplacedLandmarks[i];
-                const model = this.assets[config.name];
-
-                if (model) {
-                    // It's loaded, place it
-                    this.placeSingleLandmark(config, model);
-                    // Remove from unplaced list
-                    this.unplacedLandmarks.splice(i, 1);
-                    processedThisBatch++;
-                } else {
-                    // Not loaded yet, skip for now and check next
-                    i++;
-                }
-            }
-
-            // If we still have unchecked items, queue next batch
-            if (this.unplacedLandmarks.length > 0) {
-                setTimeout(loadBatch, 30); // Next batch on next tick (30ms to breathe)
-            } else {
-                this.addThematicGrounds();
-            }
-        };
-
-        loadBatch();
-    }
-
-    placeSingleLandmark(config, model) {
-        const landmark = model.clone();
-        landmark.userData = { name: config.name, isSittable: config.isSittable, zone: config.zone };
-
-        // Appliquer position et scale
-        landmark.position.copy(config.pos);
-        if (config.scale) landmark.scale.setScalar(config.scale);
-
-        this.scene.add(landmark);
-
-        landmark.traverse(child => {
-            if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-            }
-        });
-
-        // Calculer la bounding box après scaling
-        const box = new THREE.Box3().setFromObject(landmark);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-
-        const shape = new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2));
-        const body = new CANNON.Body({
-            mass: 0,
-            position: new CANNON.Vec3(center.x, center.y, center.z)
-        });
-        body.addShape(shape);
-        this.world.addBody(body);
-    }
-
-    onBackgroundAssetLoaded(assetName) {
-        // Called by main.js when a secondary asset finishes loading
-        if (!this.unplacedLandmarks || this.unplacedLandmarks.length === 0) return;
-
-        const model = this.assets[assetName];
-        if (!model) return; // Asset not actually loaded or not found
-
-        // Find all configurations waiting for this asset
-        for (let i = this.unplacedLandmarks.length - 1; i >= 0; i--) {
-            const config = this.unplacedLandmarks[i];
-            if (config.name === assetName) {
-                this.placeSingleLandmark(config, model);
-                this.unplacedLandmarks.splice(i, 1);
-            }
-        }
-        // If all landmarks are placed, call addThematicGrounds
-        if (this.unplacedLandmarks.length === 0) {
-            this.addThematicGrounds();
-        }
-    }
+    // Méthodes de placement de modèles supprimées
+    /*
+    placeLandmarks() { ... }
+    placeSingleLandmark(config, model) { ... }
+    onBackgroundAssetLoaded(assetName) { ... }
+    */
 
     addThematicGrounds() {
         // Sol Plage (Sable)

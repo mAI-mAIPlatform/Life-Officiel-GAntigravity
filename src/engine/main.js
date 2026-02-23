@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+// Les loaders de modèles ne sont plus nécessaires
+// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+// import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+// import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import * as CANNON from 'cannon-es';
 
 // Managers
@@ -37,6 +38,7 @@ import { QuestManager } from './QuestManager.js';
 import { MenuManager } from './MenuManager.js';
 import { InteractionManager } from './InteractionManager.js';
 import { SaveManager } from './SaveManager.js';
+import { CityManager } from '../city/CityManager.js';
 
 const reporter = new ErrorReporter();
 // Attach reporter to window for global access in GameLoop
@@ -47,10 +49,10 @@ export class GameEngine {
         console.log("--- NeoCity Engine Booting ---");
 
         this.gameStarted = false;
-        this.assets = {};
-        this.loader = new GLTFLoader();
-        this.fbxLoader = new FBXLoader();
-        this.objLoader = new OBJLoader();
+        this.assets = {}; // Sera vide maintenant
+        // this.loader = new GLTFLoader();
+        // this.fbxLoader = new FBXLoader();
+        // this.objLoader = new OBJLoader();
 
         // UI
         this.uiContainer = document.getElementById('ui-container');
@@ -69,9 +71,9 @@ export class GameEngine {
     async init() {
         try {
             this.bindEvents();
-            await this.loadCriticalAssets();
+            // await this.loadCriticalAssets(); // Plus de modèles
             this.initSystems();
-            this.loadBackgroundAssets();
+            // this.loadBackgroundAssets(); // Plus de modèles
         } catch (e) {
             console.error("Engine Start Failure:", e);
         }
@@ -84,72 +86,11 @@ export class GameEngine {
         window.addEventListener('resize', () => this.onWindowResize());
     }
 
-    async loadCriticalAssets() {
-        const critical = ['1asset.glb', '2asset.glb', '3asset.glb', '4asset.glb'];
-        const total = critical.length;
-        let loaded = 0;
-
-        const promises = critical.map(name => {
-            return new Promise(resolve => {
-                const path = `./models/${name}`;
-                const onLoad = (obj) => {
-                    this.assets[name] = obj;
-                    loaded++;
-                    console.log(`Critical Load: ${name} (${loaded}/${total})`);
-                    resolve();
-                };
-                const onError = () => {
-                    console.warn(`Critical Missing: ${name}`);
-                    loaded++;
-                    resolve();
-                };
-
-                if (name.endsWith('.glb')) this.loader.load(path, g => onLoad(g.scene), undefined, onError);
-                else if (name.endsWith('.fbx')) this.fbxLoader.load(path, onLoad, undefined, onError);
-                else this.objLoader.load(path, onLoad, undefined, onError);
-            });
-        });
-
-        await Promise.all(promises);
-    }
-
-    async loadBackgroundAssets() {
-        const secondary = [
-            '5asset.glb', '6asset.glb', '7asset.glb', '8asset.glb',
-            '9asset.glb', '10asset.glb', '11asset.glb', '13asset.gltf',
-            '14asset.gltf', '15asset.gltf', '16asset.gltf', '17asset.glb',
-            '18asset.glb', '19asset.glb', '20asset.glb', '21asset.glb',
-            '22asset.glb', '23asset.glb', '24asset.glb', '25asset.glb',
-            '26asset.glb', '27asset.glb', '28asset.glb', '29asset.glb',
-            '30asset.glb', '31asset.fbx', '32asset.glb', '33asset.glb',
-            '34asset.obj', '35asset.fbx', '36asset.fbx', '37asset.fbx',
-            '38asset.fbx', '39asset.fbx', '40asset.fbx', '41asset.fbx',
-            '42asset.fbx', '43asset.fbx', '44asset.fbx', '45asset.fbx',
-            '46asset.fbx', '47asset.fbx', '48asset.fbx', '49asset.fbx',
-            '50asset.obj'
-        ];
-
-        for (const name of secondary) {
-            try {
-                const path = `./models/${name}`;
-                const obj = await new Promise((resolve, reject) => {
-                    const skip = () => resolve(null);
-                    if (name.endsWith('.glb') || name.endsWith('.gltf')) this.loader.load(path, g => resolve(g.scene), undefined, skip);
-                    else if (name.endsWith('.fbx')) this.fbxLoader.load(path, resolve, undefined, skip);
-                    else if (name.endsWith('.obj')) this.objLoader.load(path, resolve, undefined, skip);
-                });
-
-                if (obj) {
-                    this.assets[name] = obj;
-                    if (this.cityGenerator) this.cityGenerator.onBackgroundAssetLoaded(name);
-                }
-                // Pause slightly between background assets
-                await new Promise(r => setTimeout(r, 100));
-            } catch (e) {
-                console.warn(`Bg load failed for ${name}`);
-            }
-        }
-    }
+    // Méthodes de chargement d'assets supprimées car public/models a été supprimé
+    /*
+    async loadCriticalAssets() { ... }
+    async loadBackgroundAssets() { ... }
+    */
 
     initSystems() {
         console.log("Initializing Systems...");
@@ -209,6 +150,7 @@ export class GameEngine {
         this.interactionManager = new InteractionManager(this.scene, this.player);
         this.waypointManager = new WaypointManager(this);
         this.interiorManager = new InteriorManager(this.scene, this.world, this.player);
+        this.cityManager = new CityManager(this.scene, this.world);
 
         window.game = this; // Accès global pour l'UI et les managers
         this.reporter = reporter;
